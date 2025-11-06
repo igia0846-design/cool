@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 환경 캠페인 영상 메이커</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    margin: 0;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: #f3f3f3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  header {
+    text-align: center;
+    margin-top: 50px;
+  }
+  h1 {
+    font-size: 2.3em;
+    color: #00e676;
+    margin-bottom: 10px;
+  }
+  p {
+    color: #ccc;
+  }
+  .container {
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 30px;
+    margin-top: 30px;
+    width: 90%;
+    max-width: 650px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0,255,150,0.2);
+    backdrop-filter: blur(6px);
+  }
+  input {
+    width: 80%;
+    padding: 10px;
+    border: 2px solid #00e676;
+    border-radius: 8px;
+    font-size: 1em;
+    background: transparent;
+    color: white;
+    outline: none;
+  }
+  input::placeholder {
+    color: #aaa;
+  }
+  button {
+    margin-top: 15px;
+    background: #00e676;
+    color: #0f2027;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover {
+    background: #1de9b6;
+    transform: scale(1.05);
+  }
+  .result {
+    margin-top: 30px;
+    position: relative;
+    height: 300px;
+    overflow: hidden;
+    border-radius: 15px;
+  }
+  .slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+  }
+  .slide.active {
+    opacity: 1;
+  }
+  .caption {
+    margin-top: 20px;
+    font-size: 1.3em;
+    color: #80ffdb;
+    animation: fadeIn 2s ease;
+  }
+  footer {
+    margin-top: 50px;
+    color: #aaa;
+    font-size: 0.9em;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎬 AI 환경 캠페인 영상 메이커</h1>
+  <p>AI가 만들어주는 나만의 환경 보호 영상</p>
+</header>
+
+<div class="container">
+  <input type="text" id="topicInput" placeholder="환경 주제를 입력하세요 (예: 바다 오염)">
+  <button onclick="generateCampaign()">AI로 영상 만들기</button>
+
+  <div class="result" id="resultBox"></div>
+  <div class="caption" id="captionBox"></div>
+</div>
+
+<footer>
+  © 2025 환경영상 프로젝트 | 영상 전공의 시선으로 만든 친환경 AI 아이디어
+</footer>
+
+<script>
+  // 예시 이미지 데이터베이스
+  const imageLibrary = {
+    "바다": [
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80"
+    ],
+    "플라스틱": [
+      "https://images.unsplash.com/photo-1563245372-f3e0a1b4c5d6",
+      "https://images.unsplash.com/photo-1560807707-8cc77767d783",
+      "https://images.unsplash.com/photo-1581579186985-9c80d84e4e1e"
+    ],
+    "숲": [
+      "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
+      "https://images.unsplash.com/photo-1499510318569-0c15f6b7a4be",
+      "https://images.unsplash.com/photo-1482192596544-9eb780fc7f66"
+    ],
+    "지구": [
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+      "https://images.unsplash.com/photo-1528825871115-3581a5387919",
+      "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429"
+    ],
+    "기후": [
+      "https://images.unsplash.com/photo-1502303756781-38e3d1a881e2",
+      "https://images.unsplash.com/photo-1617196035377-3f23c14a1e5b",
+      "https://images.unsplash.com/photo-1504384308090-c894fdcc538d"
+    ]
+  };
+
+  // 자동 문구
+  const captions = [
+    "작은 실천이 지구를 지킵니다 🌱",
+    "당신의 선택이 미래를 바꿉니다 🌍",
+    "깨끗한 세상, 지금부터 시작해요 💧",
+    "함께 지키는 지구의 숨결 🌿",
+    "지속 가능한 내일을 위하여 ♻️"
+  ];
+
+  let slideIndex = 0;
+  let slideTimer;
+
+  function generateCampaign() {
+    const topic = document.getElementById("topicInput").value.trim();
+    const resultBox = document.getElementById("resultBox");
+    const captionBox = document.getElementById("captionBox");
+
+    if (topic === "") {
+      captionBox.innerHTML = "<p>먼저 환경 주제를 입력해주세요!</p>";
+      return;
+    }
+
+    // 키워드 매칭
+    const keyword = Object.keys(imageLibrary).find(k => topic.includes(k)) || "지구";
+    const selectedImages = imageLibrary[keyword];
+    const captionText = captions[Math.floor(Math.random() * captions.length)];
+
+    // 슬라이드 초기화
+    resultBox.innerHTML = selectedImages.map((url, i) => 
+      `<div class="slide ${i === 0 ? 'active' : ''}" style="background-image:url('${url}')"></div>`
+    ).join("");
+
+    captionBox.innerHTML = `<strong>${topic}</strong> 캠페인 영상 🎥<br>${captionText}`;
+
+    // 자동 슬라이드
+    clearInterval(slideTimer);
+    const slides = document.querySelectorAll('.slide');
+    slideIndex = 0;
+    slideTimer = setInterval(() => {
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === slideIndex));
+      slideIndex = (slideIndex + 1) % slides.length;
+    }, 2000);
+  }
+</script>
+
+</body>
+</html>
